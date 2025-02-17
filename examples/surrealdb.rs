@@ -19,8 +19,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the connection manager with the SurrealDB server address and credentials
     let manager = SurrealDBConnectionManager::new(
         "127.0.0.1:8000".to_string(), // SurrealDB server address
-        "root".to_string(),           // Username
-        "root".to_string(),           // Password
+        "root".to_string(),           // default Username
+        "root".to_string(),           // default Password
     );
 
     // Build the connection pool with specified settings
