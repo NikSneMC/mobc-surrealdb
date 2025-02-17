@@ -56,13 +56,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the connection manager with the SurrealDB server address and credentials
     let manager = SurrealDBConnectionManager::new(
         "127.0.0.1:8000".to_string(), // SurrealDB server address
-        "root".to_string(),           // Username
-        "root".to_string(),           // Password
+        "root".to_string(),           // default Username
+        "root".to_string(),           // default Password
     );
 
     // Build the connection pool with specified settings
     let pool = Pool::builder()
-        .max_open(10) // Maximum number of open connections
+        .max_open(20) // Maximum number of open connections
         .max_idle(5) // Maximum number of idle connections
         .max_lifetime(Some(Duration::from_secs(300))) // Maximum lifetime of each connection
         .build(manager);
@@ -83,8 +83,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Insert the person into the "user" table
     let _created: Option<Person> = conn.create("user").content(person).await?;
 
-    // Retrieve all records from the "person" table
-    let mut response = conn.query("SELECT * FROM person").await?;
+    // Retrieve all records from the "user" table
+    let mut response = conn.query("SELECT * FROM user").await?;
     let persons: Vec<Person> = response.take(0)?;
 
     // Iterate over each person and print their details
@@ -132,13 +132,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the connection manager with the SurrealDB server address and credentials
     let manager = SurrealDBConnectionManager::new(
         "127.0.0.1:8000".to_string(), // SurrealDB server address
-        "root".to_string(),           // Username
-        "root".to_string(),           // Password
+        "root".to_string(),           // default Username
+        "root".to_string(),           // default Password
     );
 
     // Build the connection pool with specified settings
     let pool = Pool::builder()
-        .max_open(1) // Maximum number of open connections
+        .max_open(20) // Maximum number of open connections
         .max_idle(5) // Maximum number of idle connections
         .max_lifetime(Some(Duration::from_secs(300))) // Maximum lifetime of each connection
         .build(manager);
