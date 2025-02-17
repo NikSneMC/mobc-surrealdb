@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build the connection pool with specified settings
     let pool = Pool::builder()
-        .max_open(1) // Maximum number of open connections
+        .max_open(20) // Maximum number of open connections
         .max_idle(5) // Maximum number of idle connections
         .max_lifetime(Some(Duration::from_secs(300))) // Maximum lifetime of each connection
         .build(manager);
