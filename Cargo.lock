@@ -1890,6 +1890,7 @@ name = "mobc-surrealdb"
 version = "0.1.0"
 dependencies = [
  "mobc",
+ "serde",
  "surrealdb",
  "tokio",
 ]
