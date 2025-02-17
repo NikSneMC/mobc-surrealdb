@@ -46,8 +46,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Insert the person into the "user" table
     let _created: Option<Person> = conn.create("user").content(person).await?;
 
-    // Retrieve all records from the "person" table
-    let mut response = conn.query("SELECT * FROM person").await?;
+    // Retrieve all records from the "user" table
+    let mut response = conn.query("SELECT * FROM user").await?;
     let persons: Vec<Person> = response.take(0)?;
 
     // Iterate over each person and print their details
