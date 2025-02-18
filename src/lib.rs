@@ -1,21 +1,64 @@
 // Import necessary traits and types from external crates
-use mobc::async_trait; // For asynchronous trait support in mobc
-use mobc::Manager; // The Manager trait for connection pooling
-use surrealdb::engine::remote::ws::{Client, Ws}; // WebSocket client for SurrealDB
-use surrealdb::{Surreal, Error}; // SurrealDB main struct and error type
-use std::sync::Arc; // For thread-safe reference counting
+use mobc::async_trait;
+use mobc::Manager;
+use std::sync::Arc;
+use surrealdb::{Surreal, Error};
+use surrealdb::engine::any; // Enables runtime selection of engine
 
-// Define a struct to manage SurrealDB connection parameters
+/// Enum representing the supported connection protocols.
+#[derive(Debug, Clone)]
+pub enum ConnectionProtocol {
+    Http,
+    Https,
+    Ws,
+    Wss,
+}
+
+impl ConnectionProtocol {
+    /// Returns the scheme as a static string slice.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ConnectionProtocol::Http => "http://",
+            ConnectionProtocol::Https => "https://",
+            ConnectionProtocol::Ws => "ws://",
+            ConnectionProtocol::Wss => "wss://",
+        }
+    }
+}
+
+/// A high‑performance SurrealDB connection manager using static string slices.
+/// The default connection protocol is WebSocket (ws), but users can override it.
 pub struct SurrealDBConnectionManager {
-    db_url: String, // URL of the SurrealDB server
-    db_user: String, // Username for authentication
-    db_password: String, // Password for authentication
+    protocol: ConnectionProtocol, // The connection protocol; default is Ws.
+    db_url: &'static str,         // Server address (host:port/path)
+    db_user: &'static str,        // Username for authentication
+    db_password: &'static str,    // Password for authentication
 }
 
 impl SurrealDBConnectionManager {
-    // Constructor to create a new instance of the connection manager
-    pub fn new(db_url: String, db_user: String, db_password: String) -> Self {
+    /// Creates a new connection manager with the default protocol (ws).
+    pub fn new(
+        db_url: &'static str,
+        db_user: &'static str,
+        db_password: &'static str,
+    ) -> Self {
         Self {
+            protocol: ConnectionProtocol::Ws, // Default to ws
+            db_url,
+            db_user,
+            db_password,
+        }
+    }
+
+    /// Creates a new connection manager with a custom protocol.
+    pub fn new_with_protocol(
+        protocol: ConnectionProtocol,
+        db_url: &'static str,
+        db_user: &'static str,
+        db_password: &'static str,
+    ) -> Self {
+        Self {
+            protocol,
             db_url,
             db_user,
             db_password,
@@ -23,37 +66,34 @@ impl SurrealDBConnectionManager {
     }
 }
 
-// Implement the Manager trait for SurrealDBConnectionManager
 #[async_trait]
 impl Manager for SurrealDBConnectionManager {
-    // Define the associated types for the connection and error
-    type Connection = Arc<Surreal<Client>>; // Thread-safe reference to SurrealDB client
-    type Error = Error; // Error type from SurrealDB
+    // Use Surreal with the 'any' engine for runtime flexibility.
+    type Connection = Arc<Surreal<any::Any>>;
+    type Error = Error;
 
-    // Asynchronously establish a new connection to the database
+    /// Establish a new connection.
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        // Create a new SurrealDB client using WebSocket
-        let db = Surreal::new::<Ws>(&self.db_url).await?;
-        // Authenticate with the provided username and password
+        // Construct the full URL by concatenating the protocol and the server address.
+        let full_url = format!("{}{}", self.protocol.as_str(), self.db_url);
+        let db = any::connect(full_url).await?;
+        // Authenticate using the provided credentials.
         db.signin(surrealdb::opt::auth::Root {
-            username: &self.db_user,
-            password: &self.db_password,
+            username: self.db_user,
+            password: self.db_password,
         })
         .await?;
-        // Return the client wrapped in an Arc for shared ownership
+        // Return the connection wrapped in an Arc.
         Ok(Arc::new(db))
     }
 
-    // Asynchronously check the health of an existing connection
+    /// Check the health of an existing connection.
     async fn check(&self, conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        // Perform a simple query to verify the connection is alive
         let mut response = conn.query("RETURN 1").await?;
         let result: Option<i32> = response.take(0)?;
-        // If the query returns 1, the connection is healthy
         if result == Some(1) {
             Ok(conn)
         } else {
-            // Otherwise, return an error indicating the health check failed
             Err(Error::Api(surrealdb::error::Api::Query(
                 "Health check failed".into(),
             )))
