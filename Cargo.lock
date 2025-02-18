@@ -1887,7 +1887,7 @@ dependencies = [
 
 [[package]]
 name = "mobc-surrealdb"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "mobc",
  "serde",
