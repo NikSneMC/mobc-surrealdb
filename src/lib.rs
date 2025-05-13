@@ -29,10 +29,12 @@ impl ConnectionProtocol {
 /// A high‑performance SurrealDB connection manager using static string slices.
 /// The default connection protocol is WebSocket (ws), but users can override it.
 pub struct SurrealDBConnectionManager {
-    protocol: ConnectionProtocol, // The connection protocol; default is Ws.
-    db_url: &'static str,         // Server address (host:port/path)
-    db_user: &'static str,        // Username for authentication
-    db_password: &'static str,    // Password for authentication
+    protocol: ConnectionProtocol,       // The connection protocol; default is Ws.
+    db_url: &'static str,               // Server address (host:port/path)
+    db_user: &'static str,              // Username for authentication
+    db_password: &'static str,          // Password for authentication,
+    db_namespace: Option<&'static str>, // Namespace to use
+    db_database: Option<&'static str>,  // Database to use
 }
 
 impl SurrealDBConnectionManager {
@@ -41,12 +43,16 @@ impl SurrealDBConnectionManager {
         db_url: &'static str,
         db_user: &'static str,
         db_password: &'static str,
+        db_namespace: Option<&'static str>,
+        db_database: Option<&'static str>,
     ) -> Self {
         Self {
             protocol: ConnectionProtocol::Ws, // Default to ws
             db_url,
             db_user,
             db_password,
+            db_namespace,
+            db_database,
         }
     }
 
@@ -56,12 +62,16 @@ impl SurrealDBConnectionManager {
         db_url: &'static str,
         db_user: &'static str,
         db_password: &'static str,
+        db_namespace: Option<&'static str>,
+        db_database: Option<&'static str>,
     ) -> Self {
         Self {
             protocol,
             db_url,
             db_user,
             db_password,
+            db_namespace,
+            db_database,
         }
     }
 }
@@ -83,6 +93,15 @@ impl Manager for SurrealDBConnectionManager {
             password: self.db_password,
         })
         .await?;
+
+        if let Some(namespace) = self.db_namespace {
+            db.use_ns(namespace).await?;
+
+            if let Some(database) = self.db_database {
+                db.use_db(database).await?;
+            }
+        }
+
         // Return the connection wrapped in an Arc.
         Ok(Arc::new(db))
     }

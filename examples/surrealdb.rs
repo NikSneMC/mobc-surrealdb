@@ -23,6 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "127.0.0.1:8000", // SurrealDB server address
         "root",           // SurrealDB Default Username
         "root",           // SurrealDB Default Password
+        None,             // Do not use a namespace by default
+        None,             // Do not use a database by default
     );
 
     // Build the connection pool with custom settings:
